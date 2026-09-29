@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PomoPace — Free Pomodoro Focus Timer with Tasks, Sounds & Stats</title>
+<meta name="description" content="PomoPace is a free Pomodoro focus timer with custom work/break rhythms (25/5, 50/10, 52/17, 90/20), task tracking, ambient rain & brown noise, browser notifications, session stats, streaks and CSV reports. No signup — everything stays in your browser.">
+<meta name="theme-color" content="#DC2626">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23DC2626'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23FFF8F5'/%3E%3Crect x='30' y='17' width='4' height='15' rx='2' fill='%23DC2626'/%3E%3Ccircle cx='32' cy='32' r='3' fill='%23DC2626'/%3E%3C/svg%3E">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: {
+      cream: '#FFF8F5',
+      ink: '#3E1F16',
+      cocoa: '#8A6A5E',
+      tomato: { DEFAULT:'#DC2626', dark:'#B91C1A', deep:'#7F1D1D', soft:'#FDECEA', line:'#F5D9CF' },
+      amberx: '#D97706',
+      choc: '#78350A'
+    },
+    fontFamily: { sans: ['ui-sans-serif','system-ui','-apple-system','Segoe UI','Roboto','Helvetica','Arial','sans-serif'] }
+  } }
+}
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { background:#FFF8F5; color:#3E1F16; }
+  .card { background:#fff; border:1px solid #F5D9CF; border-radius:1.25rem; box-shadow:0 10px 30px -12px rgba(220,38,38,.12); }
+  .ring-progress { transition: stroke-dashoffset .35s linear, stroke .4s ease; }
+  .btn-tomato { background:#DC2626; color:#fff; transition: transform .08s ease, background .2s; }
+  .btn-tomato:hover { background:#B91C1A; }
+  .btn-tomato:active { transform: scale(.97); }
+  .btn-ghost { border:1px solid #F5D9CF; background:#fff; transition: background .2s, transform .08s; }
+  .btn-ghost:hover { background:#FFF1EC; }
+  .btn-ghost:active { transform: scale(.97); }
+  .preset-btn { transition: all .18s ease; }
+  .preset-btn.active { background:#DC2626; color:#fff; border-color:#DC2626; box-shadow:0 8px 20px -8px rgba(220,38,38,.55); }
+  .sound-btn.active { background:#3E1F16; color:#FFF8F5; border-color:#3E1F16; }
+  input[type=number]::-webkit-inner-spin-button { opacity:1; }
+  input[type=range] { accent-color:#DC2626; }
+  .faq-item summary::-webkit-details-marker { display:none; }
+  .fadein { animation: fadein .5s ease both; }
+  @keyframes fadein { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:none;} }
+  .pulse-dot { animation: pulsedot 1.6s ease-in-out infinite; }
+  @keyframes pulsedot { 0%,100% { opacity:1;} 50% { opacity:.35;} }
+  @media print { .no-print { display:none !important; } }
+  .hero-blob { position:absolute; border-radius:9999px; filter:blur(70px); opacity:.5; pointer-events:none; }
+  .log-scroll::-webkit-scrollbar { height:6px; width:6px; }
+  .log-scroll::-webkit-scrollbar-thumb { background:#F5D9CF; border-radius:3px; }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "PomoPace",
+  "applicationCategory": "Productivity",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Free Pomodoro focus timer with custom rhythms, task tracking, ambient sounds, session stats, streaks and CSV export."
+}
+</script>
+</head>
+<body id="top" class="font-sans antialiased">
+
+<!-- ============ STICKY HEADER ============ -->
+<header class="no-print sticky top-0 z-40 bg-cream/90 backdrop-blur border-b border-tomato-line">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2.5">
+      <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-tomato shadow-md shadow-tomato/30">
+        <svg viewBox="0 0 64 64" class="w-5 h-5" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="#FFF8F5" stroke-width="7"/><circle cx="32" cy="32" r="26" fill="none" stroke="#FFF8F5" stroke-width="7" stroke-dasharray="41 123" stroke-linecap="round" transform="rotate(-90 32 32)"/><circle cx="32" cy="32" r="4" fill="#FFF8F5"/></svg>
+      </span>
+      <span class="text-xl font-extrabold tracking-tight">Pomo<span class="text-tomato">Pace</span></span>
+    </a>
+    <nav class="flex items-center gap-1 sm:gap-2 text-sm font-semibold">
+      <a href="#top" class="px-3 py-2 rounded-lg hover:bg-tomato-soft transition">Home</a>
+      <a href="https://fixoraa.tech" class="px-3 py-2 rounded-lg hover:bg-tomato-soft transition">More Tools</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ TOP AD ============ -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pt-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <div class="origin-top scale-[0.44] sm:scale-100 shrink-0">
+        <script>
+          atOptions = { 'key' : '4e68ac77881c17fe128a46565d9a4e8c', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+        </script>
+        <script src="https://www.highrevenueformat.com/4e68ac77881c17fe128a46565d9a4e8c/invoke.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main class="mx-auto max-w-6xl px-4 sm:px-6 pb-10">
+
+  <!-- ============ HERO ============ -->
+  <section class="relative text-center pt-10 pb-8 overflow-hidden">
+    <div class="hero-blob w-72 h-72 bg-tomato-soft -top-10 -left-10"></div>
+    <div class="hero-blob w-80 h-80 bg-amber-100 top-6 -right-16"></div>
+    <div class="relative">
+      <p class="text-xs font-bold tracking-[0.22em] uppercase text-tomato mb-3">Free Pomodoro Focus Timer</p>
+      <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">Pace your focus.<br class="sm:hidden"> Finish <span class="text-tomato">more.</span></h1>
+      <p class="mt-4 max-w-2xl mx-auto text-cocoa text-base sm:text-lg">Work in focused sprints, rest on purpose. PomoPace pairs a precise Pomodoro timer with task tracking, ambient soundscapes and a daily focus report — all free, all in your browser.</p>
+      <div class="mt-5 flex items-center justify-center gap-3 flex-wrap">
+        <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border-2 border-tomato bg-tomato-soft text-tomato-deep text-sm font-bold">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
+          Unlimited Free Usage
+        </span>
+        <span class="text-sm text-cocoa">No signup · No paywall · No watermark</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RHYTHM PRESETS ============ -->
+  <section aria-label="Rhythm presets" class="mb-6">
+    <h2 class="text-sm font-bold tracking-[0.18em] uppercase text-cocoa mb-3 text-center">Choose your rhythm</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5" id="presetRow">
+      <button data-preset="classic" class="preset-btn active card !rounded-2xl px-3 py-3.5 text-left">
+        <div class="text-lg font-extrabold leading-none">25<span class="text-xs font-bold text-cocoa">/</span>5</div>
+        <div class="text-xs font-semibold mt-1.5 opacity-80">Classic Pomodoro</div>
+      </button>
+      <button data-preset="extended" class="preset-btn card !rounded-2xl px-3 py-3.5 text-left">
+        <div class="text-lg font-extrabold leading-none">50<span class="text-xs font-bold text-cocoa">/</span>10</div>
+        <div class="text-xs font-semibold mt-1.5 opacity-80">Extended focus</div>
+      </button>
+      <button data-preset="desktime" class="preset-btn card !rounded-2xl px-3 py-3.5 text-left">
+        <div class="text-lg font-extrabold leading-none">52<span class="text-xs font-bold text-cocoa">/</span>17</div>
+        <div class="text-xs font-semibold mt-1.5 opacity-80">DeskTime 52/17</div>
+      </button>
+      <button data-preset="ultradian" class="preset-btn card !rounded-2xl px-3 py-3.5 text-left">
+        <div class="text-lg font-extrabold leading-none">90<span class="text-xs font-bold text-cocoa">/</span>20</div>
+        <div class="text-xs font-semibold mt-1.5 opacity-80">Ultradian deep work</div>
+      </button>
+      <button data-preset="custom" class="preset-btn card !rounded-2xl px-3 py-3.5 text-left">
+        <div class="text-lg font-extrabold leading-none">⚙️</div>
+        <div class="text-xs font-semibold mt-1.5 opacity-80">Fully custom</div>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ TIMER + TASKS ============ -->
+  <section class="grid lg:grid-cols-5 gap-5 items-start">
+
+    <!-- TIMER CARD -->
+    <div class="card lg:col-span-3 p-6 sm:p-8 text-center relative overflow-hidden">
+      <div class="hero-blob w-64 h-64 bg-tomato-soft -bottom-20 -right-20"></div>
+      <div class="relative">
+        <div class="flex items-center justify-center gap-2 mb-1">
+          <span id="phasePill" class="px-3.5 py-1 rounded-full text-xs font-extrabold tracking-widest uppercase bg-tomato text-white">Focus</span>
+          <span id="liveDot" class="hidden w-2.5 h-2.5 rounded-full bg-tomato pulse-dot" title="Timer running"></span>
+        </div>
+
+        <!-- SVG RING -->
+        <div class="relative inline-block my-2">
+          <svg id="ringSvg" width="280" height="280" viewBox="0 0 280 280" class="max-w-full h-auto" role="timer" aria-label="Countdown timer">
+            <circle cx="140" cy="140" r="120" fill="none" stroke="#FBE4DB" stroke-width="18"/>
+            <circle id="ringProg" class="ring-progress" cx="140" cy="140" r="120" fill="none" stroke="#DC2626" stroke-width="18"
+                    stroke-linecap="round" stroke-dasharray="753.98" stroke-dashoffset="0" transform="rotate(-90 140 140)"/>
+            <g id="ringTicks" opacity="0.35"></g>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <div id="timeText" class="text-5xl sm:text-6xl font-extrabold tabular-nums tracking-tight">25:00</div>
+            <div id="phaseSub" class="text-sm text-cocoa font-semibold mt-1">Ready when you are</div>
+          </div>
+        </div>
+
+        <!-- SESSION DOTS -->
+        <div class="flex items-center justify-center gap-2 my-3" id="sessionDots" aria-label="Session progress"></div>
+
+        <!-- CONTROLS -->
+        <div class="flex items-center justify-center gap-2.5 sm:gap-3 flex-wrap mt-2">
+          <button id="startPauseBtn" class="btn-tomato px-8 py-3 rounded-2xl font-extrabold text-lg min-w-[132px]">▶ Start</button>
+          <button id="resetBtn" class="btn-ghost px-5 py-3 rounded-2xl font-bold">↺ Reset</button>
+          <button id="skipBtn" class="btn-ghost px-5 py-3 rounded-2xl font-bold">⏭ Skip</button>
+        </div>
+
+        <p class="text-xs text-cocoa mt-3">Tip: press <kbd class="px-1.5 py-0.5 rounded bg-tomato-soft border border-tomato-line font-bold">Space</kbd> to start / pause, <kbd class="px-1.5 py-0.5 rounded bg-tomato-soft border border-tomato-line font-bold">R</kbd> to reset, <kbd class="px-1.5 py-0.5 rounded bg-tomato-soft border border-tomato-line font-bold">S</kbd> to skip.</p>
+
+        <!-- UP NEXT -->
+        <div class="mt-4 text-left bg-cream rounded-2xl border border-tomato-line p-4">
+          <div class="text-xs font-extrabold tracking-widest uppercase text-cocoa mb-2">Up next in this cycle</div>
+          <ol id="upNextList" class="text-sm space-y-1.5"></ol>
+        </div>
+
+        <!-- AMBIENT SOUND -->
+        <div class="mt-4 text-left bg-cream rounded-2xl border border-tomato-line p-4">
+          <div class="flex items-center justify-between flex-wrap gap-2 mb-2.5">
+            <div class="text-xs font-extrabold tracking-widest uppercase text-cocoa">Ambient sound</div>
+            <div class="flex items-center gap-2 text-xs text-cocoa">
+              <label for="volSlider" class="font-bold">Volume</label>
+              <input id="volSlider" type="range" min="0" max="100" value="45" class="w-24">
+            </div>
+          </div>
+          <div class="flex gap-2 flex-wrap" id="soundRow">
+            <button data-sound="off" class="sound-btn active btn-ghost px-4 py-2 rounded-xl text-sm font-bold">🔇 Silence</button>
+            <button data-sound="rain" class="sound-btn btn-ghost px-4 py-2 rounded-xl text-sm font-bold">🌧 Rain</button>
+            <button data-sound="brown" class="sound-btn btn-ghost px-4 py-2 rounded-xl text-sm font-bold">🌊 Brown noise</button>
+          </div>
+          <p class="text-xs text-cocoa mt-2">Sounds are synthesized live with the Web Audio API — no audio files, no downloads. They start and stop with your timer.</p>
+          <div class="mt-3 flex items-center justify-between flex-wrap gap-2">
+            <label class="flex items-center gap-2 text-sm font-semibold cursor-pointer">
+              <input id="notifyToggle" type="checkbox" class="w-4 h-4 accent-[#DC2626]">
+              Browser notifications on phase change
+            </label>
+            <span id="notifyState" class="text-xs text-cocoa"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASKS CARD -->
+    <div class="card lg:col-span-2 p-6 flex flex-col">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="text-lg font-extrabold">Today's tasks</h2>
+        <span id="taskCount" class="text-xs font-bold text-cocoa">0 tasks</span>
+      </div>
+      <p class="text-xs text-cocoa mb-4">Assign pomodoros to each task. Completed focus sessions are credited to the active task automatically.</p>
+      <div class="flex gap-2 mb-4">
+        <input id="taskInput" type="text" maxlength="120" placeholder="e.g. Draft project proposal" class="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl border border-tomato-line bg-cream text-sm focus:outline-none focus:ring-2 focus:ring-tomato/40">
+        <div class="flex items-center border border-tomato-line rounded-xl bg-cream overflow-hidden shrink-0">
+          <button id="estMinus" class="px-2.5 py-2 font-extrabold text-tomato" aria-label="Decrease estimate">−</button>
+          <span class="text-sm font-bold w-12 text-center" title="Estimated pomodoros"><span id="estVal">2</span> 🍅</span>
+          <button id="estPlus" class="px-2.5 py-2 font-extrabold text-tomato" aria-label="Increase estimate">+</button>
+        </div>
+        <button id="addTaskBtn" class="btn-tomato px-4 py-2.5 rounded-xl font-bold text-sm shrink-0">Add</button>
+      </div>
+      <ul id="taskList" class="space-y-2.5 overflow-y-auto log-scroll max-h-[380px] pr-0.5"></ul>
+      <p id="taskEmpty" class="text-sm text-cocoa text-center py-8 border border-dashed border-tomato-line rounded-2xl">No tasks yet — add your first one above and tap it to make it active.</p>
+      <div class="mt-4 pt-4 border-t border-tomato-line">
+        <div class="text-xs font-extrabold tracking-widest uppercase text-cocoa mb-2">Active task</div>
+        <div id="activeTaskBox" class="text-sm font-bold bg-tomato-soft border border-tomato-line rounded-xl px-3.5 py-2.5">None selected — tap a task to activate it</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS + REPORT ============ -->
+  <section class="grid lg:grid-cols-2 gap-5 mt-5 items-start">
+
+    <!-- SETTINGS -->
+    <div class="card p-6">
+      <h2 class="text-lg font-extrabold mb-1">Custom rhythm</h2>
+      <p class="text-xs text-cocoa mb-4">Durations are in minutes. Changing any value resets the current countdown.</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <label class="block">
+          <span class="text-xs font-bold text-cocoa uppercase tracking-wide">Focus</span>
+          <input id="setFocus" type="number" min="1" max="240" value="25" class="mt-1 w-full px-3 py-2.5 rounded-xl border border-tomato-line bg-cream font-bold focus:outline-none focus:ring-2 focus:ring-tomato/40">
+        </label>
+        <label class="block">
+          <span class="text-xs font-bold text-cocoa uppercase tracking-wide">Short break</span>
+          <input id="setShort" type="number" min="1" max="120" value="5" class="mt-1 w-full px-3 py-2.5 rounded-xl border border-tomato-line bg-cream font-bold focus:outline-none focus:ring-2 focus:ring-tomato/40">
+        </label>
+        <label class="block">
+          <span class="text-xs font-bold text-cocoa uppercase tracking-wide">Long break</span>
+          <input id="setLong" type="number" min="1" max="120" value="15" class="mt-1 w-full px-3 py-2.5 rounded-xl border border-tomato-line bg-cream font-bold focus:outline-none focus:ring-2 focus:ring-tomato/40">
+        </label>
+        <label class="block">
+          <span class="text-xs font-bold text-cocoa uppercase tracking-wide">Sessions / cycle</span>
+          <input id="setCycles" type="number" min="1" max="12" value="4" class="mt-1 w-full px-3 py-2.5 rounded-xl border border-tomato-line bg-cream font-bold focus:outline-none focus:ring-2 focus:ring-tomato/40">
+        </label>
+      </div>
+      <div class="flex items-center justify-between flex-wrap gap-3 mt-4">
+        <label class="flex items-center gap-2 text-sm font-semibold cursor-pointer">
+          <input id="autoStartToggle" type="checkbox" class="w-4 h-4 accent-[#DC2626]">
+          Auto-start breaks &amp; focus sessions
+        </label>
+        <label class="flex items-center gap-2 text-sm font-semibold">
+          Daily goal
+          <input id="goalInput" type="number" min="15" max="960" step="15" value="120" class="w-20 px-2.5 py-1.5 rounded-xl border border-tomato-line bg-cream font-bold focus:outline-none focus:ring-2 focus:ring-tomato/40">
+          <span class="text-cocoa text-xs">min</span>
+        </label>
+      </div>
+      <p class="text-xs text-cocoa mt-3">The countdown is driven by wall-clock timestamps, so it stays accurate even when this tab is in the background or your laptop naps. Your remaining time also shows in the browser tab title.</p>
+    </div>
+
+    <!-- FOCUS REPORT -->
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h2 class="text-lg font-extrabold">Focus report</h2>
+        <button id="csvBtn" class="btn-ghost px-4 py-2 rounded-xl text-sm font-bold">⬇ Export CSV</button>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+        <div class="bg-cream border border-tomato-line rounded-2xl p-3 text-center">
+          <div id="statMinutes" class="text-2xl font-extrabold text-tomato tabular-nums">0</div>
+          <div class="text-[11px] font-bold text-cocoa uppercase tracking-wide mt-0.5">Focus min today</div>
+        </div>
+        <div class="bg-cream border border-tomato-line rounded-2xl p-3 text-center">
+          <div id="statSessions" class="text-2xl font-extrabold tabular-nums">0</div>
+          <div class="text-[11px] font-bold text-cocoa uppercase tracking-wide mt-0.5">Sessions today</div>
+        </div>
+        <div class="bg-cream border border-tomato-line rounded-2xl p-3 text-center">
+          <div id="statStreak" class="text-2xl font-extrabold text-amberx tabular-nums">0🔥</div>
+          <div class="text-[11px] font-bold text-cocoa uppercase tracking-wide mt-0.5">Day streak</div>
+        </div>
+        <div class="bg-cream border border-tomato-line rounded-2xl p-3 text-center">
+          <div id="statGoal" class="text-2xl font-extrabold tabular-nums">0%</div>
+          <div class="text-[11px] font-bold text-cocoa uppercase tracking-wide mt-0.5">Of daily goal</div>
+        </div>
+      </div>
+      <div class="h-2.5 bg-tomato-soft rounded-full overflow-hidden mb-5">
+        <div id="goalBar" class="h-full bg-tomato rounded-full transition-all duration-500" style="width:0%"></div>
+      </div>
+      <div class="text-xs font-extrabold tracking-widest uppercase text-cocoa mb-2">Last 7 days — focus minutes</div>
+      <div id="weekChart" class="bg-cream border border-tomato-line rounded-2xl p-3 mb-4"></div>
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-xs font-extrabold tracking-widest uppercase text-cocoa">Session log</div>
+        <button id="clearDataBtn" class="text-xs font-bold text-tomato underline underline-offset-2">Clear all data</button>
+      </div>
+      <ul id="sessionLog" class="log-scroll text-sm space-y-1.5 max-h-40 overflow-y-auto"></ul>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ BOTTOM AD ============ -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pb-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <script async src="https://js.wpadmngr.com/static/adManager.js" data-admpid="464498"></script>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SEO ARTICLE ============ -->
+<article id="seo-article" class="mx-auto max-w-4xl px-4 sm:px-6 pb-10 prose-tomato">
+  <div class="card p-6 sm:p-10">
+    <h2 class="text-3xl font-extrabold tracking-tight mb-6">The Pomodoro Technique: A Complete Guide to Focused Work, Timeboxing and Deep Concentration</h2>
+
+    <h3 class="text-xl font-extrabold mt-8 mb-3">What is the Pomodoro Technique?</h3>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">The Pomodoro Technique is a time-management method developed in the late 1980s by Francesco Cirillo, who named it after the tomato-shaped kitchen timer he used as a university student — "pomodoro" is Italian for tomato. The idea is disarmingly simple: instead of working in one long, shapeless block, you divide your work into short, intense intervals of focused effort separated by deliberate rest. Each interval is called a "pomodoro," traditionally 25 minutes long, followed by a 5-minute break. After completing four pomodoros, you take a longer break of 15 to 30 minutes, then start a new cycle.</p>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">The traditional method has five steps. First, choose a single task to work on. Second, set a timer for 25 minutes and work on that task with complete focus, ignoring everything else. Third, when the timer rings, put a checkmark on a piece of paper and take a genuine 5-minute break. Fourth, repeat this three more times. Fifth, after the fourth pomodoro, take a longer break of 15 to 30 minutes before starting again. That paper checkmark may sound trivial, but it is the psychological engine of the whole system: it turns an abstract afternoon of "working" into a concrete scoreboard of completed sprints.</p>
+
+    <h3 class="text-xl font-extrabold mt-8 mb-3">Why 25 minutes of focus works: the science of attention</h3>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">The Pomodoro Technique endures because it aligns with how human attention actually behaves. One of the biggest enemies of productivity is not laziness but task initiation — the psychological friction of starting. Research on procrastination shows that breaking work into short, concrete actions dramatically reduces avoidance, because the brain negotiates with "just 25 minutes" far more readily than with "finish the whole report." A pomodoro is small enough to start and long enough to matter.</p>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">Interruptions are the second enemy. Studies of workplace attention have found that after an interruption it can take more than 20 minutes to fully refocus on the original task. Every glance at a phone or a "quick question" from a colleague resets that expensive recovery clock. A pomodoro creates a protected container: for 25 minutes, you have explicit permission to ignore everything that is not the task. This single-tasking also avoids what psychologists call "attention residue" — the finding, documented by Sophie Leroy at the University of Minnesota, that part of your mind keeps chewing on a previous task after you switch, degrading performance on the new one. Finishing a clean 25-minute block and then deliberately closing it with a break lets that residue clear.</p>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">There is also a memory argument for the break. Cognitive science has long shown that rest periods help consolidate learning, moving information from working memory into longer-term storage. The brief diversions built into the technique — standing up, looking away, letting the mind wander — activate the brain's default mode network, the background processing system associated with creative insight and problem synthesis. Many people report that the solution to a hard problem arrives during the 5-minute break, not during the 25 minutes of staring at it. That is not a coincidence; it is your brain continuing to work while you rest.</p>
+
+    <h3 class="text-xl font-extrabold mt-8 mb-3">Beyond 25/5: finding your personal rhythm</h3>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">The classic 25/5 split is a starting point, not a law. Different tasks and different brains thrive on different cadences, and one of the most useful things you can do is experiment deliberately. A well-known analysis by the time-tracking company DeskTime, covering millions of anonymized work records, found that the most productive 10 percent of users tended to work for about 52 minutes followed by 17-minute breaks — a rhythm some timers now offer as a preset. A follow-up analysis even observed top performers sustaining focus blocks beyond 100 minutes. These are observational findings from workplace telemetry, not laboratory proof of an "optimal" ratio, but they confirm an important intuition: for deep, complex work, 25 minutes can feel too short, and a longer runway lets you reach full depth.</p>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">At the other end of the scale, the 50/10 rhythm is a popular middle ground for knowledge workers — long enough for substantial progress, short enough to repeat all day. For genuinely deep creative work, many practitioners use 90-minute blocks with 20-minute breaks, inspired by the concept of ultradian rhythms: the roughly 90-minute cycles of high and low alertness first described by sleep researcher Nathaniel Kleitman. While the 90-minute cycle is firmly established for sleep, its application to waking focus is debated among scientists; still, 90 minutes serves as a sensible upper bound, because output quality tends to degrade measurably after an hour and a half of sustained concentration regardless of how focused you feel.</p>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">For highly distractible days or tasks you have been avoiding, the opposite direction works: micro-pomodoros of 15 minutes with 3-minute breaks. The reduced commitment overcomes procrastination, and once you start, you often find you want to continue. The practical takeaway is to treat the timer as an adjustable instrument. Use 25/5 for admin, email sweeps and study sessions; 50/10 or 52/17 for writing, coding and analysis; 90/20 for the hardest creative problems of your week; and 15/3 to trick yourself into starting the thing you dread. A good Pomodoro timer, like PomoPace, lets you switch between these rhythms with one tap and also define a fully custom work, short-break and long-break length for anything in between.</p>
+
+    <h3 class="text-xl font-extrabold mt-8 mb-3">Timeboxing: why the timer beats the to-do list</h3>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">The Pomodoro Technique is a specific form of timeboxing — the practice of allocating a fixed, non-negotiable block of time to a task and stopping when the box ends. Timeboxing attacks two classic productivity traps at once. The first is Parkinson's Law: work expands to fill the time available for it. An open-ended "work on the presentation this afternoon" will sprawl across four hours; the same work squeezed into three pomodoros gets sharper decisions and less fiddling. The second is perfectionism. When the timer rings, the sprint is over, which forces you to define "good enough for this block" and move on — a discipline that compounds enormously over weeks.</p>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">Timeboxing also leverages implementation intentions, a concept from motivation psychology showing that people who plan exactly when and where they will act are far more likely to follow through than those with vague goals. "I will do four pomodoros on the report starting at 9 AM" is an implementation intention; "I'll work on the report tomorrow" is a wish. Pairing each sprint with a named task — writing down what the pomodoro is for before you start it — closes the loop between planning and doing, and it gives your session log meaning when you review the week.</p>
+
+    <h3 class="text-xl font-extrabold mt-8 mb-3">What to do during the breaks (and what not to do)</h3>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">The break is not optional decoration; it is half the technique. A real break means genuine detachment from work stimuli. Stand up and move — even a two-minute walk or a set of stretches resets both body and mind, and breaking up sitting roughly every half hour is good for you independently of productivity. Look away from the screen: the 20-20-20 rule (every 20 minutes, look at something 20 feet away for 20 seconds) relieves eye strain. Drink water. Step outside if you can; daylight and fresh air measurably improve alertness for the next sprint.</p>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">What not to do: do not spend the break on your phone scrolling social media. That is not rest — it is a different kind of cognitive load, and it makes the next pomodoro harder to start because your brain is still processing the feed. Do not "just check one email" either; that is how 5-minute breaks become 25-minute detours. If a distracting thought arrives mid-pomodoro, the classic technique recommends writing it down on a "parking lot" list and returning to it later, which keeps the sprint clean without losing the idea.</p>
+
+    <h3 class="text-xl font-extrabold mt-8 mb-3">Common mistakes that break the technique</h3>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">The most common mistake is skipping breaks when you feel "in the zone." It feels productive, but research on cognitive depletion suggests that decision quality can degrade during extended focus even when you feel fine — subjective energy is a poor meter. The break is structural, not a reward for feeling tired. The second mistake is running pomodoros without a task list. Without a named task per sprint, the timer becomes a metronome for drifting; with one, every sprint has a purpose and your log tells a story. Third, people treat interruptions as harmless: pausing the timer for a chat and resuming where they left off. The technique's rule is stricter and better — an unavoidable interruption voids the pomodoro, because a fractured sprint is not a sprint. Finally, many beginners set wildly optimistic daily targets, like twelve pomodoros on day one, then quit by Wednesday. Start with four to six, build the habit, and let the streak do the motivating.</p>
+
+    <h3 class="text-xl font-extrabold mt-8 mb-3">Making it stick: streaks, goals and your environment</h3>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">Habits survive on feedback, which is why tracking matters. A visible streak of focused days turns an abstract virtue ("I should focus more") into a concrete chain you do not want to break. Set a modest daily goal — say, 120 minutes of true focus — and watch the progress bar fill; on most days, two solid hours of undistracted deep work outperforms six hours of fragmented half-attention. Review your week: which tasks absorbed the most pomodoros, and were they the tasks that matter? The weekly chart in PomoPace exists for exactly this review.</p>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">Environment design multiplies the timer's effect. Put the phone in another room during sprints — studies consistently show that even a silent phone nearby drains working memory. Use headphones with ambient sound: steady rain or brown noise masks office chatter without the lyrical distraction of music, giving your brain a consistent acoustic backdrop that signals "focus time." Keep water within reach so the break can be about movement, not logistics. And tell the people around you what the timer means: a visible countdown is a socially legible "do not disturb" sign.</p>
+    <p class="text-[15px] leading-7 text-ink/90 mb-4">The Pomodoro Technique will not do your work for you, and no interval is magic. What it does is convert the vague intention to "focus" into a repeatable, measurable ritual: choose the task, start the timer, work with full commitment, rest with full permission, and record the win. Do that a few hundred times and you will have built something more valuable than any single productive afternoon — a personal system for turning time into finished work. PomoPace gives you that system for free: precise timing that stays accurate in background tabs, rhythms from classic 25/5 to ultradian 90/20, task tracking with pomodoro estimates, ambient soundscapes, gentle chimes and notifications, and a focus report that shows your streaks and exports your data. Set the timer, pick your task, and start your first pomodoro now.</p>
+  </div>
+</article>
+
+<!-- ============ FAQS ============ -->
+<section class="mx-auto max-w-4xl px-4 sm:px-6 pb-12" aria-label="Frequently asked questions">
+  <h2 class="text-2xl font-extrabold tracking-tight mb-5 text-center">Frequently asked questions</h2>
+  <div class="space-y-3">
+    <details class="faq-item card !rounded-2xl p-5 cursor-pointer">
+      <summary class="font-bold flex items-center justify-between gap-3">What is the Pomodoro Technique and how does it work?<span class="text-tomato font-extrabold">+</span></summary>
+      <p class="text-sm text-ink/80 leading-6 mt-3">The Pomodoro Technique is a time-management method where you work in focused 25-minute intervals ("pomodoros") separated by 5-minute breaks, with a longer 15–30 minute break after every four sessions. You pick one task, start the timer, work with full focus until it rings, then rest. PomoPace automates the whole cycle — focus, short break, long break — and lets you switch to other rhythms like 50/10, 52/17 or 90/20, or define your own.</p>
+    </details>
+    <details class="faq-item card !rounded-2xl p-5 cursor-pointer">
+      <summary class="font-bold flex items-center justify-between gap-3">Is 25 minutes really the best interval, or should I use 50/10 or 52/17?<span class="text-tomato font-extrabold">+</span></summary>
+      <p class="text-sm text-ink/80 leading-6 mt-3">There is no single scientifically proven "best" interval — it depends on the task and the person. Classic 25/5 is excellent for getting started, studying and admin work. A large DeskTime analysis found their most productive users averaged 52 minutes of work with 17-minute breaks, which suits coding and writing. The 90/20 rhythm mirrors ultradian alertness cycles and fits deep creative work. PomoPace includes all of these as one-tap presets, so you can experiment and keep whichever rhythm produces your best work.</p>
+    </details>
+    <details class="faq-item card !rounded-2xl p-5 cursor-pointer">
+      <summary class="font-bold flex items-center justify-between gap-3">Does PomoPace keep counting accurately when I switch browser tabs?<span class="text-tomato font-extrabold">+</span></summary>
+      <p class="text-sm text-ink/80 leading-6 mt-3">Yes. Instead of counting timer ticks — which browsers slow down or pause in background tabs — PomoPace records a wall-clock deadline when a session starts and recomputes the remaining time from the current time on every update. Your countdown stays correct even if the tab is throttled, minimized or your laptop briefly sleeps. The remaining time also appears in the browser tab title, so you can glance at it from anywhere.</p>
+    </details>
+    <details class="faq-item card !rounded-2xl p-5 cursor-pointer">
+      <summary class="font-bold flex items-center justify-between gap-3">Do I need an account? Where is my data stored?<span class="text-tomato font-extrabold">+</span></summary>
+      <p class="text-sm text-ink/80 leading-6 mt-3">No account, no signup, no server. Everything — your settings, tasks, session log, daily stats and streaks — is stored in your browser's localStorage on your own device. Nothing is uploaded anywhere, and there is no tracking. Your data persists between visits on the same browser, and you can wipe it any time with the "Clear all data" button in the focus report.</p>
+    </details>
+    <details class="faq-item card !rounded-2xl p-5 cursor-pointer">
+      <summary class="font-bold flex items-center justify-between gap-3">What should I actually do during the breaks?<span class="text-tomato font-extrabold">+</span></summary>
+      <p class="text-sm text-ink/80 leading-6 mt-3">Take a real break: stand up, stretch, walk around, drink water, look out a window. Short breaks are for physical recovery and letting your mind wander — that is when background processing often solves the problem you were stuck on. Avoid scrolling social media or checking email; those are cognitive load disguised as rest and make the next session harder to start. During long breaks, step away from the desk entirely if you can.</p>
+    </details>
+    <details class="faq-item card !rounded-2xl p-5 cursor-pointer">
+      <summary class="font-bold flex items-center justify-between gap-3">How do streaks, stats and the CSV export work?<span class="text-tomato font-extrabold">+</span></summary>
+      <p class="text-sm text-ink/80 leading-6 mt-3">Every completed focus session adds its minutes to today's total. A "streak day" is any day with at least one completed focus session; your streak counts consecutive such days. The report shows today's minutes, session count, streak and progress toward your daily goal, plus a 7-day bar chart. The CSV export downloads two tables — per-task pomodoro estimates vs. completed counts, and per-day sessions and minutes — so you can analyze your focus history in any spreadsheet.</p>
+    </details>
+  </div>
+</section>
+
+<footer class="no-print border-t border-tomato-line">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-cocoa">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-tomato">
+        <svg viewBox="0 0 64 64" class="w-4 h-4" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="#FFF8F5" stroke-width="8"/></svg>
+      </span>
+      <span class="font-bold text-ink">PomoPace</span>
+      <span>· Free focus tools. Your data never leaves your browser.</span>
+    </div>
+    <nav class="flex items-center gap-4 font-semibold">
+      <a href="#top" class="hover:text-tomato transition">Home</a>
+      <a href="https://fixoraa.tech" class="hover:text-tomato transition">More Tools</a>
+    </nav>
+  </div>
+  <p class="text-center text-xs text-cocoa/70 pb-6">© 2026 PomoPace. Made for deep work.</p>
+</footer>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "What is the Pomodoro Technique and how does it work?", "acceptedAnswer": { "@type": "Answer", "text": "The Pomodoro Technique is a time-management method where you work in focused 25-minute intervals ('pomodoros') separated by 5-minute breaks, with a longer 15-30 minute break after every four sessions. PomoPace automates the full cycle and offers rhythms like 50/10, 52/17 and 90/20 plus custom durations." } },
+    { "@type": "Question", "name": "Is 25 minutes really the best interval, or should I use 50/10 or 52/17?", "acceptedAnswer": { "@type": "Answer", "text": "There is no single proven best interval. Classic 25/5 suits starting out and admin work; a DeskTime analysis found top performers averaging 52 minutes of work with 17-minute breaks; 90/20 mirrors ultradian cycles for deep creative work. PomoPace includes all as one-tap presets." } },
+    { "@type": "Question", "name": "Does PomoPace keep counting accurately when I switch browser tabs?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. PomoPace records a wall-clock deadline at session start and recomputes remaining time from the current time on every update, so background-tab throttling cannot skew the countdown. Remaining time also shows in the browser tab title." } },
+    { "@type": "Question", "name": "Do I need an account? Where is my data stored?", "acceptedAnswer": { "@type": "Answer", "text": "No account or signup is needed. Settings, tasks, session logs, stats and streaks are stored in your browser's localStorage on your own device. Nothing is uploaded, and you can wipe it anytime with 'Clear all data'." } },
+    { "@type": "Question", "name": "What should I actually do during the breaks?", "acceptedAnswer": { "@type": "Answer", "text": "Stand up, stretch, walk, drink water and look away from the screen. Avoid social media and email during breaks — they are cognitive load disguised as rest. Long breaks are best spent fully away from the desk." } },
+    { "@type": "Question", "name": "How do streaks, stats and the CSV export work?", "acceptedAnswer": { "@type": "Answer", "text": "Each completed focus session adds minutes to the day's total; a streak day is any day with at least one completed session. The report shows today's minutes, sessions, streak, goal progress and a 7-day chart, and the CSV export downloads per-task and per-day tables for spreadsheet analysis." } }
+  ]
+}
+</script>
+
+<script>
+'use strict';
+/* __PURE_START__ */
+/* Pure, DOM-free logic for PomoPace. Extracted and unit-tested by
+   ~/workspace/tool-factory/tests/pomopace.test.js via the markers. */
+
+var PRESETS = {
+  classic:   { focusMin: 25, shortMin: 5,  longMin: 15, cycles: 4 },
+  extended:  { focusMin: 50, shortMin: 10, longMin: 20, cycles: 4 },
+  desktime:  { focusMin: 52, shortMin: 17, longMin: 30, cycles: 4 },
+  ultradian: { focusMin: 90, shortMin: 20, longMin: 30, cycles: 2 }
+};
+
+function clampNum(v, min, max, fallback) {
+  var n = Number(v);
+  if (!isFinite(n)) return fallback;
+  n = Math.round(n);
+  if (n < min) return min;
+  if (n > max) return max;
+  return n;
+}
+
+/* Clamp raw user settings to safe minimums/maximums. */
+function sanitizeSettings(raw) {
+  raw = raw || {};
+  var focusMin = clampNum(raw.focusMin, 1, 240, 25);
+  var shortMin = clampNum(raw.shortMin, 1, 120, 5);
+  var longMin  = clampNum(raw.longMin, 1, 120, 15);
+  var cycles   = clampNum(raw.cycles, 1, 12, 4);
+  var goalMin  = clampNum(raw.goalMin, 15, 960, 120);
+  return {
+    focusMin: focusMin, shortMin: shortMin, longMin: longMin,
+    cycles: cycles, autoStart: !!raw.autoStart, goalMin: goalMin,
+    focusMs: focusMin * 60000, shortMs: shortMin * 60000, longMs: longMin * 60000
+  };
+}
+
+/* One full cycle: focus,short,focus,short,...,focus,long */
+function buildCycleTimeline(s) {
+  var segs = [];
+  for (var c = 0; c < s.cycles; c++) {
+    segs.push({ phase: 'focus', ms: s.focusMs });
+    if (c === s.cycles - 1) segs.push({ phase: 'long', ms: s.longMs });
+    else segs.push({ phase: 'short', ms: s.shortMs });
+  }
+  var total = 0;
+  for (var i = 0; i < segs.length; i++) total += segs[i].ms;
+  return { segments: segs, totalMs: total };
+}
+
+/* Phase state machine: given elapsed ms since cycle anchor + settings,
+   return current phase, remaining ms, completed focus sessions in this cycle,
+   and which cycle we are in. */
+function phaseForElapsed(elapsedMs, s) {
+  var tl = buildCycleTimeline(s);
+  var elapsed = Math.max(0, Number(elapsedMs) || 0);
+  var cycleNum = Math.floor(elapsed / tl.totalMs);
+  var pos = elapsed - cycleNum * tl.totalMs;
+  var focusDone = 0;
+  for (var i = 0; i < tl.segments.length; i++) {
+    var seg = tl.segments[i];
+    if (pos < seg.ms) {
+      return { phase: seg.phase, remainingMs: seg.ms - pos, focusDone: focusDone,
+               cycleNum: cycleNum, segmentIndex: i };
+    }
+    pos -= seg.ms;
+    if (seg.phase === 'focus') focusDone++;
+  }
+  var last = tl.segments[tl.segments.length - 1];
+  return { phase: last.phase, remainingMs: last.ms, focusDone: focusDone,
+           cycleNum: cycleNum, segmentIndex: tl.segments.length - 1 };
+}
+
+function phaseLabel(phase) {
+  if (phase === 'short') return 'Short break';
+  if (phase === 'long') return 'Long break';
+  return 'Focus';
+}
+
+function phaseMs(phase, s) {
+  if (phase === 'short') return s.shortMs;
+  if (phase === 'long') return s.longMs;
+  return s.focusMs;
+}
+
+/* Next phase given current phase + completed focus sessions in this cycle. */
+function nextPhaseAfter(phase, focusDoneInCycle, cycles) {
+  if (phase === 'focus') return (focusDoneInCycle >= cycles) ? 'long' : 'short';
+  return 'focus';
+}
+
+function fmtClock(ms) {
+  var s = Math.max(0, Math.ceil(ms / 1000));
+  var m = Math.floor(s / 60), sec = s % 60;
+  return (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+/* ---- Day keys (local timezone) ---- */
+function dayKeyFromDate(d) {
+  var y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+  return y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+}
+function parseDayKey(key) {
+  var p = String(key).split('-');
+  return new Date(+p[0], (+p[1]) - 1, +p[2], 12, 0, 0);
+}
+function shiftDayKey(key, n) {
+  var d = parseDayKey(key);
+  d.setDate(d.getDate() + n);
+  return dayKeyFromDate(d);
+}
+function last7Keys(refKey) {
+  var out = [];
+  for (var i = 6; i >= 0; i--) out.push(shiftDayKey(refKey, -i));
+  return out;
+}
+function dayHasSessions(dayMap, key) {
+  var e = dayMap && dayMap[key];
+  return !!(e && e.sessions > 0);
+}
+
+/* Consecutive streak of days with >=1 focus session, ending at refKey
+   (or the day before it if refKey itself has none yet). */
+function computeStreak(dayMap, refKey) {
+  if (!refKey) return 0;
+  var key = refKey;
+  if (!dayHasSessions(dayMap, key)) key = shiftDayKey(key, -1);
+  var s = 0, guard = 0;
+  while (dayHasSessions(dayMap, key) && guard < 3700) {
+    s++;
+    key = shiftDayKey(key, -1);
+    guard++;
+  }
+  return s;
+}
+
+/* ---- CSV export ---- */
+function csvEscape(v) {
+  var s = String(v == null ? '' : v);
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+function buildTaskCSV(tasks, dayMap) {
+  var lines = [];
+  lines.push('Task,Estimated Pomodoros,Completed Pomodoros,Status');
+  (tasks || []).forEach(function (t) {
+    lines.push([csvEscape(t.title), t.est, t.pomos, t.done ? 'Done' : 'Open'].join(','));
+  });
+  lines.push('');
+  lines.push('Date,Focus Sessions,Focus Minutes');
+  var keys = Object.keys(dayMap || {}).sort();
+  keys.forEach(function (k) {
+    var e = dayMap[k] || {};
+    lines.push([k, e.sessions || 0, e.minutes || 0].join(','));
+  });
+  return lines.join('\r\n');
+}
+
+/* ---- Weekly bar chart (SVG string) ---- */
+function weeklyBars(keys, minutes) {
+  var max = 0, i;
+  for (i = 0; i < minutes.length; i++) if (minutes[i] > max) max = minutes[i];
+  if (max <= 0) max = 1;
+  var W = 560, H = 150, padB = 26, gap = 10, padX = 8;
+  var n = keys.length, bw = (W - padX * 2 - gap * (n - 1)) / n;
+  var out = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="w-full" role="img" aria-label="Focus minutes per day, last 7 days">';
+  for (i = 0; i < n; i++) {
+    var h = Math.max(2, (H - padB - 14) * (minutes[i] / max));
+    var x = padX + i * (bw + gap), y = H - padB - h;
+    var d = String(keys[i]).slice(5);
+    out += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) +
+           '" height="' + h.toFixed(1) + '" rx="6" fill="' + (minutes[i] > 0 ? '#DC2626' : '#F5D9CF') + '"/>';
+    out += '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="#8A6A5E">' + d + '</text>';
+    if (minutes[i] > 0) {
+      out += '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (y - 5).toFixed(1) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#3E1F16">' + minutes[i] + '</text>';
+    }
+  }
+  return out + '</svg>';
+}
+/* __PURE_END__ */
+
+/* ================= APP (DOM + engine) ================= */
+(function () {
+  'use strict';
+  var BASE_TITLE = 'PomoPace — Free Pomodoro Focus Timer';
+  var CIRC = 2 * Math.PI * 120;
+  var PHASE_COLORS = { focus: '#DC2626', short: '#D97706', long: '#78350A' };
+
+  /* ---------- storage ---------- */
+  function lsGet(k, fb) { try { var v = localStorage.getItem(k); return v == null ? fb : JSON.parse(v); } catch (e) { return fb; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+  var settings = sanitizeSettings(lsGet('pomopace-settings-v1', null));
+  var tasks = lsGet('pomopace-tasks-v1', []) || [];
+  var dayMap = lsGet('pomopace-days-v1', {}) || {};
+  var sessionLog = lsGet('pomopace-log-v1', []) || [];
+  var misc = { sound: 'off', volume: 45, notify: false, activeTaskId: null };
+  (function () { var m = lsGet('pomopace-misc-v1', {}); if (m) for (var k in m) if (m.hasOwnProperty(k)) misc[k] = m[k]; })();
+
+  function saveAll() {
+    lsSet('pomopace-settings-v1', { focusMin: settings.focusMin, shortMin: settings.shortMin, longMin: settings.longMin, cycles: settings.cycles, autoStart: settings.autoStart, goalMin: settings.goalMin });
+    lsSet('pomopace-tasks-v1', tasks);
+    lsSet('pomopace-days-v1', dayMap);
+    lsSet('pomopace-log-v1', sessionLog.slice(0, 100));
+    lsSet('pomopace-misc-v1', misc);
+  }
+
+  /* ---------- element refs ---------- */
+  function $(id) { return document.getElementById(id); }
+  var timeText = $('timeText'), phaseSub = $('phaseSub'), phasePill = $('phasePill'),
+      ringProg = $('ringProg'), sessionDots = $('sessionDots'), startPauseBtn = $('startPauseBtn'),
+      liveDot = $('liveDot'), upNextList = $('upNextList');
+
+  /* ---------- audio (Web Audio API, synthesized) ---------- */
+  function volToGain(v) { v = Math.max(0, Math.min(100, Number(v) || 0)) / 100; return v * v * 0.6; }
+  var AU = {
+    ctx: null, master: null, nodes: null,
+    ensure: function () {
+      if (!this.ctx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return false;
+        this.ctx = new AC();
+      }
+      if (this.ctx.state === 'suspended') { try { this.ctx.resume(); } catch (e) {} }
+      return true;
+    },
+    noiseBuffer: function (brown) {
+      var ctx = this.ctx, len = Math.floor(ctx.sampleRate * 3),
+          buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0), last = 0, i, w;
+      for (i = 0; i < len; i++) {
+        w = Math.random() * 2 - 1;
+        if (brown) { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.4; }
+        else d[i] = w * 0.5;
+      }
+      return buf;
+    },
+    start: function (mode) {
+      if (!this.ensure()) return;
+      this.stop();
+      if (mode === 'off') return;
+      var ctx = this.ctx;
+      this.master = ctx.createGain();
+      this.master.gain.value = volToGain(misc.volume);
+      this.master.connect(ctx.destination);
+      var src = ctx.createBufferSource();
+      src.buffer = this.noiseBuffer(mode === 'brown');
+      src.loop = true;
+      var filt = ctx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.value = (mode === 'rain') ? 1500 : 420;
+      src.connect(filt); filt.connect(this.master); src.start();
+      var lfo = null;
+      if (mode === 'rain') {
+        lfo = ctx.createOscillator(); lfo.frequency.value = 0.6;
+        var lg = ctx.createGain(); lg.gain.value = volToGain(misc.volume) * 0.3;
+        lfo.connect(lg); lg.connect(this.master.gain); lfo.start();
+      }
+      this.nodes = { src: src, lfo: lfo };
+    },
+    stop: function () {
+      if (this.nodes) {
+        try { this.nodes.src.stop(); } catch (e) {}
+        try { if (this.nodes.lfo) this.nodes.lfo.stop(); } catch (e) {}
+      }
+      if (this.master) { try { this.master.disconnect(); } catch (e) {} }
+      this.nodes = null; this.master = null;
+    },
+    setVolume: function (v) {
+      if (this.master && this.ctx) {
+        try { this.master.gain.setTargetAtTime(volToGain(v), this.ctx.currentTime, 0.08); } catch (e) {}
+      }
+    },
+    chime: function (up) {
+      if (!this.ensure()) return;
+      var ctx = this.ctx, t = ctx.currentTime + 0.02;
+      var seq = up ? [659.25, 880.0] : [880.0, 659.25];
+      for (var i = 0; i < seq.length; i++) {
+        (function (f, start) {
+          var o = ctx.createOscillator(), g = ctx.createGain();
+          o.type = 'sine'; o.frequency.value = f;
+          g.gain.setValueAtTime(0.0001, start);
+          g.gain.exponentialRampToValueAtTime(0.32, start + 0.04);
+          g.gain.exponentialRampToValueAtTime(0.0001, start + 0.9);
+          o.connect(g); g.connect(ctx.destination);
+          o.start(start); o.stop(start + 1.0);
+        })(seq[i], t + i * 0.5);
+      }
+    }
+  };
+
+  /* ---------- notifications ---------- */
+  function refreshNotifyState() {
+    var el = $('notifyState');
+    if (!misc.notify) { el.textContent = ''; return; }
+    if (!('Notification' in window)) { el.textContent = 'Not supported in this browser'; return; }
+    if (Notification.permission === 'granted') el.textContent = 'On — you will be alerted on phase changes';
+    else if (Notification.permission === 'denied') el.textContent = 'Blocked — allow notifications in your browser settings';
+    else el.textContent = 'Permission pending';
+  }
+  function maybeNotify(title, body) {
+    if (!misc.notify) return;
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body: body });
+      }
+    } catch (e) {}
+  }
+
+  /* ---------- timer engine (timestamp-driven) ---------- */
+  var T = { status: 'idle', phase: 'focus', deadline: 0, pausedMs: 0, durationMs: settings.focusMs, focusDone: 0, tickId: null };
+
+  function persistRun() {
+    lsSet('pomopace-run-v1', { status: T.status, phase: T.phase, deadline: T.deadline, pausedMs: T.pausedMs, durationMs: T.durationMs, focusDone: T.focusDone });
+  }
+  function clearTick() { if (T.tickId) { clearInterval(T.tickId); T.tickId = null; } }
+
+  function todayKey() { return dayKeyFromDate(new Date()); }
+
+  function activeTask() {
+    for (var i = 0; i < tasks.length; i++) if (tasks[i].id === misc.activeTaskId) return tasks[i];
+    return null;
+  }
+
+  function creditFocusSession() {
+    var key = todayKey(), mins = settings.focusMin;
+    var e = dayMap[key] || { sessions: 0, minutes: 0 };
+    e.sessions++; e.minutes += mins;
+    dayMap[key] = e;
+    var at = activeTask();
+    if (at && !at.done) at.pomos++;
+    sessionLog.unshift({ ts: Date.now(), minutes: mins, task: at ? at.title : '' });
+    sessionLog = sessionLog.slice(0, 100);
+    saveAll();
+  }
+
+  function beginPhase(phase) {
+    T.phase = phase;
+    T.durationMs = phaseMs(phase, settings);
+    T.deadline = Date.now() + T.durationMs;
+    T.status = 'running';
+    T.pausedMs = 0;
+    clearTick();
+    T.tickId = setInterval(tick, 200);
+    if (misc.sound !== 'off') AU.start(misc.sound);
+    persistRun();
+    render();
+  }
+
+  function tick() {
+    var rem = T.deadline - Date.now();
+    if (rem <= 0) { finishPhase(); return; }
+    paint(rem);
+    persistRun();
+  }
+
+  function finishPhase() {
+    clearTick();
+    AU.stop();
+    var wasFocus = (T.phase === 'focus');
+    if (wasFocus) {
+      T.focusDone++;
+      creditFocusSession();
+    }
+    AU.chime(wasFocus);
+    var next = nextPhaseAfter(T.phase, T.focusDone, settings.cycles);
+    if (T.phase === 'long') T.focusDone = 0;
+    maybeNotify('PomoPace — ' + phaseLabel(T.phase) + ' finished',
+      wasFocus ? 'Well done! Time for a ' + phaseLabel(next).toLowerCase() + '.' : 'Break over. Ready for your next focus sprint?');
+    if (settings.autoStart) {
+      beginPhase(next);
+    } else {
+      T.phase = next;
+      T.status = 'idle';
+      T.durationMs = phaseMs(next, settings);
+      persistRun();
+      render();
+    }
+  }
+
+  function toggleStartPause() {
+    AU.ensure();
+    if (T.status === 'running') {
+      T.pausedMs = Math.max(0, T.deadline - Date.now());
+      T.status = 'paused';
+      clearTick();
+      AU.stop();
+      persistRun();
+      render();
+    } else if (T.status === 'paused') {
+      T.deadline = Date.now() + T.pausedMs;
+      T.status = 'running';
+      T.pausedMs = 0;
+      clearTick();
+      T.tickId = setInterval(tick, 200);
+      if (misc.sound !== 'off') AU.start(misc.sound);
+      persistRun();
+      render();
+    } else {
+      beginPhase(T.phase);
+    }
+  }
+
+  function resetTimer() {
+    clearTick();
+    AU.stop();
+    T.status = 'idle';
+    T.pausedMs = 0;
+    T.durationMs = phaseMs(T.phase, settings);
+    persistRun();
+    render();
+  }
+
+  function skipPhase() {
+    clearTick();
+    AU.stop();
+    var next = nextPhaseAfter(T.phase, T.focusDone, settings.cycles);
+    if (T.phase === 'long') T.focusDone = 0;
+    T.phase = next;
+    T.status = 'idle';
+    T.durationMs = phaseMs(next, settings);
+    persistRun();
+    render();
+  }
+
+  /* ---------- rendering ---------- */
+  function paint(remainingMs) {
+    var total = T.durationMs || 1;
+    var frac = Math.max(0, Math.min(1, remainingMs / total));
+    ringProg.style.strokeDashoffset = String(CIRC * (1 - frac));
+    ringProg.setAttribute('stroke', PHASE_COLORS[T.phase]);
+    timeText.textContent = fmtClock(remainingMs);
+    document.title = fmtClock(remainingMs) + ' · ' + phaseLabel(T.phase) + ' — PomoPace';
+  }
+
+  function phasePillClass(phase) {
+    phasePill.textContent = phaseLabel(phase);
+    phasePill.className = 'px-3.5 py-1 rounded-full text-xs font-extrabold tracking-widest uppercase ' +
+      (phase === 'focus' ? 'bg-tomato text-white' : phase === 'short' ? 'bg-amberx text-white' : 'bg-choc text-white');
+  }
+
+  function currentSegIndex() {
+    var tl = buildCycleTimeline(settings).segments;
+    if (T.phase === 'focus') return Math.min(T.focusDone * 2, tl.length - 1);
+    if (T.phase === 'short') return Math.min(Math.max(0, (T.focusDone - 1) * 2 + 1), tl.length - 1);
+    return tl.length - 1;
+  }
+
+  function renderUpNext() {
+    var tl = buildCycleTimeline(settings).segments;
+    var idx = currentSegIndex();
+    var html = '';
+    for (var i = idx; i < Math.min(idx + 6, tl.length); i++) {
+      var seg = tl[i];
+      var mins = Math.round(seg.ms / 60000);
+      var tag = (i === idx) ? '<span class="text-tomato font-extrabold">now</span>' : '<span class="text-cocoa">#' + (i - idx) + '</span>';
+      var dot = seg.phase === 'focus' ? 'bg-tomato' : seg.phase === 'short' ? 'bg-amberx' : 'bg-choc';
+      html += '<li class="flex items-center gap-2.5"><span class="w-2.5 h-2.5 rounded-full ' + dot + '"></span>' +
+              '<span class="font-bold flex-1">' + phaseLabel(seg.phase) + ' · ' + mins + ' min</span>' + tag + '</li>';
+    }
+    upNextList.innerHTML = html;
+  }
+
+  function renderDots() {
+    var html = '';
+    for (var i = 0; i < settings.cycles; i++) {
+      var done = i < T.focusDone;
+      var current = (T.phase === 'focus' && i === T.focusDone);
+      html += '<span class="w-3.5 h-3.5 rounded-full border-2 ' +
+        (done ? 'bg-tomato border-tomato' : current ? 'border-tomato pulse-dot' : 'border-tomato-line bg-white') +
+        '" title="Focus session ' + (i + 1) + ' of ' + settings.cycles + '"></span>';
+    }
+    sessionDots.innerHTML = html;
+  }
+
+  function render() {
+    phasePillClass(T.phase);
+    renderDots();
+    renderUpNext();
+    liveDot.classList.toggle('hidden', T.status !== 'running');
+    if (T.status === 'running') {
+      startPauseBtn.innerHTML = '⏸ Pause';
+      paint(T.deadline - Date.now());
+      var sessNo = T.phase === 'focus' ? (T.focusDone + 1) : T.focusDone;
+      phaseSub.textContent = T.phase === 'focus'
+        ? 'Session ' + sessNo + ' of ' + settings.cycles + ' · stay with it'
+        : 'Recharge — next up: ' + phaseLabel(nextPhaseAfter(T.phase, T.focusDone, settings.cycles)).toLowerCase();
+    } else if (T.status === 'paused') {
+      startPauseBtn.innerHTML = '▶ Resume';
+      paint(T.pausedMs);
+      phaseSub.textContent = 'Paused — ' + phaseLabel(T.phase).toLowerCase() + ' waiting';
+      document.title = '⏸ Paused · ' + BASE_TITLE;
+    } else {
+      startPauseBtn.innerHTML = '▶ Start';
+      paint(T.durationMs);
+      phaseSub.textContent = T.phase === 'focus' ? 'Ready — ' + settings.focusMin + ' minutes of deep focus ahead' : 'Ready — enjoy your ' + phaseLabel(T.phase).toLowerCase();
+      document.title = BASE_TITLE;
+    }
+  }
+
+  /* ---------- tasks ---------- */
+  var taskList = $('taskList'), taskEmpty = $('taskEmpty'), taskInput = $('taskInput'),
+      estVal = $('estVal'), activeTaskBox = $('activeTaskBox'), taskCount = $('taskCount');
+  var newEst = 2;
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function renderTasks() {
+    taskCount.textContent = tasks.length + (tasks.length === 1 ? ' task' : ' tasks');
+    taskEmpty.style.display = tasks.length ? 'none' : 'block';
+    var html = '';
+    tasks.forEach(function (t) {
+      var isActive = t.id === misc.activeTaskId;
+      html += '<li data-id="' + t.id + '" class="task-row flex items-center gap-2.5 p-3 rounded-2xl border cursor-pointer transition ' +
+        (isActive ? 'border-tomato bg-tomato-soft shadow-sm' : 'border-tomato-line bg-white hover:bg-cream') + '">' +
+        '<button class="task-check shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ' +
+        (t.done ? 'bg-tomato border-tomato text-white' : 'border-tomato-line text-transparent') + '" aria-label="Mark done">' +
+        '<svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd"/></svg></button>' +
+        '<span class="flex-1 min-w-0 text-sm font-semibold ' + (t.done ? 'line-through text-cocoa' : '') + '">' + esc(t.title) + '</span>' +
+        '<span class="text-xs font-bold text-cocoa tabular-nums shrink-0" title="Completed / estimated pomodoros">' + t.pomos + '/' + t.est + ' 🍅</span>' +
+        '<button class="task-del shrink-0 text-cocoa hover:text-tomato font-extrabold px-1" aria-label="Delete task">×</button></li>';
+    });
+    taskList.innerHTML = html;
+    var at = activeTask();
+    activeTaskBox.textContent = at ? '🎯 ' + at.title + '  (' + at.pomos + '/' + at.est + ' pomodoros)' : 'None selected — tap a task to activate it';
+  }
+
+  function addTask() {
+    var title = taskInput.value.trim();
+    if (!title) { taskInput.focus(); return; }
+    tasks.push({ id: Date.now() + '' + Math.floor(Math.random() * 1e6), title: title, est: newEst, pomos: 0, done: false });
+    if (!misc.activeTaskId) misc.activeTaskId = tasks[tasks.length - 1].id;
+    taskInput.value = '';
+    taskInput.focus();
+    saveAll(); renderTasks();
+  }
+
+  taskList.addEventListener('click', function (e) {
+    var li = e.target.closest('.task-row');
+    if (!li) return;
+    var id = li.getAttribute('data-id');
+    var t = null;
+    for (var i = 0; i < tasks.length; i++) if (tasks[i].id === id) t = tasks[i];
+    if (!t) return;
+    if (e.target.closest('.task-check')) { t.done = !t.done; }
+    else if (e.target.closest('.task-del')) {
+      tasks = tasks.filter(function (x) { return x.id !== id; });
+      if (misc.activeTaskId === id) misc.activeTaskId = tasks.length ? tasks[0].id : null;
+    }
+    else { misc.activeTaskId = id; }
+    saveAll(); renderTasks();
+  });
+
+  $('addTaskBtn').addEventListener('click', addTask);
+  taskInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') addTask(); });
+  $('estMinus').addEventListener('click', function () { newEst = Math.max(1, newEst - 1); estVal.textContent = newEst; });
+  $('estPlus').addEventListener('click', function () { newEst = Math.min(12, newEst + 1); estVal.textContent = newEst; });
+
+  /* ---------- report ---------- */
+  function renderReport() {
+    var key = todayKey();
+    var e = dayMap[key] || { sessions: 0, minutes: 0 };
+    var streak = computeStreak(dayMap, key);
+    $('statMinutes').textContent = e.minutes;
+    $('statSessions').textContent = e.sessions;
+    $('statStreak').textContent = streak + '🔥';
+    var pct = Math.min(100, Math.round((e.minutes / settings.goalMin) * 100));
+    $('statGoal').textContent = pct + '%';
+    $('goalBar').style.width = pct + '%';
+    var keys = last7Keys(key);
+    var mins = keys.map(function (k) { return (dayMap[k] || { minutes: 0 }).minutes; });
+    $('weekChart').innerHTML = weeklyBars(keys, mins);
+    var html = '';
+    sessionLog.slice(0, 12).forEach(function (s) {
+      var d = new Date(s.ts);
+      var hh = d.getHours(), mm = d.getMinutes();
+      var tstr = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+      html += '<li class="flex items-center gap-2 bg-cream border border-tomato-line rounded-xl px-3 py-1.5">' +
+        '<span class="w-2 h-2 rounded-full bg-tomato shrink-0"></span>' +
+        '<span class="font-bold">' + s.minutes + ' min focus</span>' +
+        (s.task ? '<span class="text-cocoa truncate flex-1">· ' + esc(s.task) + '</span>' : '<span class="flex-1"></span>') +
+        '<span class="text-cocoa text-xs tabular-nums shrink-0">' + tstr + '</span></li>';
+    });
+    $('sessionLog').innerHTML = html || '<li class="text-cocoa text-sm">No sessions yet — start your first pomodoro above.</li>';
+  }
+
+  $('csvBtn').addEventListener('click', function () {
+    var csv = buildTaskCSV(tasks, dayMap);
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'pomopace-focus-report.csv';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  });
+
+  $('clearDataBtn').addEventListener('click', function () {
+    if (!window.confirm('Delete all PomoPace data on this device (settings, tasks, stats, log)?')) return;
+    ['pomopace-settings-v1', 'pomopace-tasks-v1', 'pomopace-days-v1', 'pomopace-log-v1', 'pomopace-misc-v1', 'pomopace-run-v1'].forEach(lsDel);
+    settings = sanitizeSettings(null);
+    tasks = []; dayMap = {}; sessionLog = [];
+    misc = { sound: 'off', volume: 45, notify: false, activeTaskId: null };
+    resetTimer(); T.focusDone = 0; T.phase = 'focus';
+    syncSettingsInputs(); syncSoundUI(); $('notifyToggle').checked = false; refreshNotifyState();
+    saveAll(); renderTasks(); renderReport(); render();
+    markPreset('classic');
+  });
+
+  /* ---------- settings & presets ---------- */
+  function syncSettingsInputs() {
+    $('setFocus').value = settings.focusMin;
+    $('setShort').value = settings.shortMin;
+    $('setLong').value = settings.longMin;
+    $('setCycles').value = settings.cycles;
+    $('autoStartToggle').checked = settings.autoStart;
+    $('goalInput').value = settings.goalMin;
+  }
+
+  function markPreset(name) {
+    var btns = document.querySelectorAll('#presetRow .preset-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', btns[i].getAttribute('data-preset') === name);
+    }
+  }
+
+  function applyPreset(name) {
+    var p = PRESETS[name];
+    if (!p) return;
+    settings = sanitizeSettings({ focusMin: p.focusMin, shortMin: p.shortMin, longMin: p.longMin, cycles: p.cycles, autoStart: settings.autoStart, goalMin: settings.goalMin });
+    markPreset(name);
+    syncSettingsInputs();
+    resetTimer(); T.focusDone = 0; T.phase = 'focus';
+    saveAll(); renderReport(); render();
+  }
+
+  document.querySelectorAll('#presetRow .preset-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var name = btn.getAttribute('data-preset');
+      if (name === 'custom') { markPreset('custom'); $('setFocus').focus(); return; }
+      applyPreset(name);
+    });
+  });
+
+  ['setFocus', 'setShort', 'setLong', 'setCycles', 'goalInput'].forEach(function (id) {
+    $(id).addEventListener('change', function () {
+      settings = sanitizeSettings({
+        focusMin: $('setFocus').value, shortMin: $('setShort').value, longMin: $('setLong').value,
+        cycles: $('setCycles').value, autoStart: $('autoStartToggle').checked, goalMin: $('goalInput').value
+      });
+      markPreset('custom');
+      syncSettingsInputs();
+      resetTimer(); T.focusDone = 0; T.phase = 'focus';
+      saveAll(); renderReport(); render();
+    });
+  });
+  $('autoStartToggle').addEventListener('change', function () {
+    settings.autoStart = $('autoStartToggle').checked;
+    saveAll();
+  });
+
+  /* ---------- ambient sound UI ---------- */
+  function syncSoundUI() {
+    var btns = document.querySelectorAll('#soundRow .sound-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', btns[i].getAttribute('data-sound') === misc.sound);
+    }
+    $('volSlider').value = misc.volume;
+  }
+  document.querySelectorAll('#soundRow .sound-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      AU.ensure();
+      misc.sound = btn.getAttribute('data-sound');
+      if (T.status === 'running' && misc.sound !== 'off') AU.start(misc.sound);
+      else AU.stop();
+      syncSoundUI(); saveAll();
+    });
+  });
+  $('volSlider').addEventListener('input', function () {
+    misc.volume = Number($('volSlider').value);
+    AU.setVolume(misc.volume);
+    saveAll();
+  });
+
+  /* ---------- notifications UI ---------- */
+  $('notifyToggle').addEventListener('change', function () {
+    var on = $('notifyToggle').checked;
+    if (on && 'Notification' in window && Notification.permission === 'default') {
+      try {
+        Notification.requestPermission().then(function (p) {
+          misc.notify = (p === 'granted');
+          $('notifyToggle').checked = misc.notify;
+          refreshNotifyState(); saveAll();
+        });
+        return;
+      } catch (e) {}
+    }
+    misc.notify = on && 'Notification' in window && Notification.permission !== 'denied';
+    if (on && !('Notification' in window)) misc.notify = false;
+    $('notifyToggle').checked = misc.notify;
+    refreshNotifyState(); saveAll();
+  });
+
+  /* ---------- controls & keyboard ---------- */
+  startPauseBtn.addEventListener('click', toggleStartPause);
+  $('resetBtn').addEventListener('click', resetTimer);
+  $('skipBtn').addEventListener('click', skipPhase);
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+    if (e.code === 'Space') { e.preventDefault(); toggleStartPause(); }
+    else if (e.key === 'r' || e.key === 'R') resetTimer();
+    else if (e.key === 's' || e.key === 'S') skipPhase();
+  });
+
+  /* ---------- ring ticks ---------- */
+  (function () {
+    var g = $('ringTicks'), s = '';
+    for (var i = 0; i < 12; i++) {
+      var a = i * Math.PI / 6;
+      var x1 = 140 + 100 * Math.cos(a), y1 = 140 + 100 * Math.sin(a);
+      var x2 = 140 + 108 * Math.cos(a), y2 = 140 + 108 * Math.sin(a);
+      s += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="#DC2626" stroke-width="2"/>';
+    }
+    g.innerHTML = s;
+  })();
+
+  /* ---------- init ---------- */
+  function init() {
+    syncSettingsInputs();
+    syncSoundUI();
+    $('notifyToggle').checked = misc.notify && 'Notification' in window && Notification.permission === 'granted';
+    refreshNotifyState();
+    // detect which preset matches current settings
+    var matched = 'custom';
+    for (var name in PRESETS) {
+      if (PRESETS.hasOwnProperty(name)) {
+        var p = PRESETS[name];
+        if (p.focusMin === settings.focusMin && p.shortMin === settings.shortMin && p.longMin === settings.longMin && p.cycles === settings.cycles) { matched = name; break; }
+      }
+    }
+    markPreset(matched);
+    renderTasks();
+    renderReport();
+    // refresh recovery
+    var run = lsGet('pomopace-run-v1', null);
+    if (run && (run.status === 'running' || run.status === 'paused')) {
+      T.phase = run.phase || 'focus';
+      T.focusDone = run.focusDone || 0;
+      T.durationMs = phaseMs(T.phase, settings);
+      if (run.status === 'running' && run.deadline > Date.now()) {
+        T.deadline = run.deadline;
+        T.status = 'running';
+        clearTick();
+        T.tickId = setInterval(tick, 200);
+      } else if (run.status === 'paused' && run.pausedMs > 0) {
+        T.pausedMs = Math.min(run.pausedMs, T.durationMs);
+        T.status = 'paused';
+      } else {
+        T.status = 'idle';
+      }
+    }
+    render();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
